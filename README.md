@@ -1,59 +1,104 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Trustfactory Assessment - Simple E-commerce Shopping Cart
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A full-stack e-commerce application built with **Laravel** and **Livewire**, designed to demonstrate backend logic, asynchronous queue processing, and task scheduling.
 
-## About Laravel
+## 🚀 Project Overview
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+This project satisfies the technical assessment requirements for the **Trustfactory Laravel Developer** role. [cite_start]It implements a persistent shopping cart system where user actions are stored directly in the database rather than the session[cite: 19].
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### Key Features implemented:
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+* **🛒 Persistent Shopping Cart:**
+    * Cart is associated with the authenticated `User` model[cite: 18].
+    * Uses Database Transactions to ensure stock accuracy during add/remove operations.
+    * Prevents adding items if stock is insufficient.
 
-## Learning Laravel
+* **📉 Low Stock Notification (Queue/Job):**
+    * Automatically dispatches a background job (`LowStockJob`) when a product's stock drops to 5 or below.
+    * Sends an email alert to a dummy admin user[cite: 28].
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+* **📊 Daily Sales Report (Task Scheduling):**
+    * A scheduled task (`DailySalesReportJob`) runs every evening at **23:00**.
+    * Compiles a list of products sold that day and emails a report to the admin[cite: 29].
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## 🛠️ Tech Stack
+* **Framework:** Laravel 11
+* **Frontend:** Livewire + Tailwind CSS
+* **Database:** MySQL
+* **Queue Driver:** Database
 
-## Laravel Sponsors
+---
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## ⚙️ Installation & Setup
 
-### Premium Partners
+Follow these steps to get the project running locally.
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+### 1. Clone & Install
+```bash
+git clone <repository_url>
+cd <repository_folder>
 
-## Contributing
+composer install
+npm install && npm run build
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```
 
-## Code of Conduct
+### 2. Environment Configuration
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```bash
+cp .env.example .env
+php artisan key:generate
 
-## Security Vulnerabilities
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Update your `.env` file with your database credentials.
 
-## License
+**Crucial:** To see email logs locally without setting up an SMTP server, set the mailer to `log`:
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```env
+MAIL_MAILER=log
+QUEUE_CONNECTION=database
+
+```
+
+### 3. Database Migration
+
+```bash
+php artisan migrate
+
+```
+
+*Tip: You may want to seed some dummy products manually or via tinker to test the cart.*
+
+### 4. Serve the Application
+
+```bash
+php artisan serve
+
+```
+
+---
+
+## 🧪 How to Test Background Jobs
+
+Since this project relies on Queues and Scheduling, you must run the following commands in separate terminal windows to see the features in action.
+
+### 1. Run the Queue Worker
+
+Required for **Low Stock Alerts** and sending emails.
+
+```bash
+php artisan queue:work
+
+```
+
+### 2. Test the Daily Report Schedule
+
+Instead of waiting for 23:00, you can force the schedule to run immediately:
+
+```bash
+php artisan schedule:test
+
+```
+
+Check your `storage/logs/laravel.log` (or your configured mail trap) to see the "Daily Sales Report" email HTML.
