@@ -4,31 +4,42 @@ namespace App\Livewire;
 
 use App\Jobs\LowStockJob;
 use App\Models\Product;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
-
 
 class ProductList extends Component
 {
     public function addToCart($productId)
     {
-        $product = Product::findOrFail($productId);
+        DB::transaction(function () use ($productId) {
+            $product = Product::lockForUpdate()->findOrFail($productId);
 
-        $cart = auth()->user()->cart()->firstOrCreate([]);
+            if ($product->stock_quantity < 1) {
+                session()->flash('error', 'Product is out of stock.');
+                return;
+            }
 
-        $item = $cart->items()->where('product_id', $product->id)->first();
+            $cart = auth()->user()->cart()->firstOrCreate([]);
 
-        if ($item) {
-            $item->increment('quantity');
-        } else {
-            $cart->items()->create([
-                'product_id' => $product->id,
-                'quantity' => 1,
-            ]);
-        }
+            $item = $cart->items()->where('product_id', $product->id)->first();
 
-        if ($product->stock_quantity <= 5) {
-        LowStockJob::dispatch($product);
-        }
+            if ($item) {
+                $item->increment('quantity');
+            } else {
+                $cart->items()->create([
+                    'product_id' => $product->id,
+                    'quantity' => 1,
+                ]);
+            }
+
+            $product->decrement('stock_quantity');
+
+            if ($product->stock_quantity <= 5) {
+                LowStockJob::dispatch($product);
+            }
+        });
+
+        session()->flash('success', 'Product added to cart successfully!');
     }
 
     public function render()
@@ -38,4 +49,3 @@ class ProductList extends Component
         ])->layout('layouts.app');
     }
 }
-
